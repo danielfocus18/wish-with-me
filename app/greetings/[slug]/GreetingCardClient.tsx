@@ -7,6 +7,7 @@ import { Greeting, ThemeConfig, ColorCustomization } from "@/types";
 import Slideshow from "@/components/greeting/Slideshow";
 import AudioPlayer from "@/components/greeting/AudioPlayer";
 import VideoEmbed from "@/components/greeting/VideoEmbed";
+import VideoPlayer from "@/components/greeting/VideoPlayer";
 import dynamic from "next/dynamic";
 
 const Confetti = dynamic(() => import("@/components/greeting/Confetti"), { ssr: false });
@@ -177,7 +178,14 @@ export default function GreetingCardClient({ greeting, theme }: Props) {
           </div>
         </motion.div>
 
-        {/* Video */}
+        {/* Uploaded video */}
+        {(greeting as any).uploaded_video_url && (
+          <motion.div variants={itemVariants} className="w-full mb-6">
+            <VideoPlayer src={(greeting as any).uploaded_video_url} />
+          </motion.div>
+        )}
+
+        {/* YouTube/Vimeo embed */}
         {greeting.video_url && (
           <motion.div variants={itemVariants} className="w-full mb-6">
             <VideoEmbed url={greeting.video_url} />

@@ -20,6 +20,7 @@ export interface Greeting {
   background_music_url: string | null;
   video_url: string | null;
   background_video_url: string | null;
+  uploaded_video_url: string | null;
   show_confetti: boolean;
   is_published: boolean;
   created_at: string;
