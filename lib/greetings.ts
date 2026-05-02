@@ -61,31 +61,6 @@ export async function deleteGreeting(id: string): Promise<void> {
   }
 }
 
-export async function uploadFile(
-  bucket: string,
-  file: File,
-  folder = ""
-): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("bucket", bucket);
-  formData.append("folder", folder);
-
-  const res = await fetch("/api/upload", {
-    method: "POST",
-    body: formData,
-  });
-
-  // Safely parse — server might return plain text on crash
-  const text = await res.text();
-  let data: any;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error(`Upload server error (${res.status}): ${text.slice(0, 200)}`);
-  }
-
-  if (!res.ok) throw new Error(data.error || "Upload failed");
-  if (!data.url) throw new Error("No URL returned from upload");
-  return data.url;
-}
+// Re-export direct upload — browser uploads go straight to Supabase Storage
+// This bypasses Vercel's 4.5MB serverless payload limit for large files
+export { uploadFileDirect as uploadFile } from "@/lib/upload";
