@@ -75,10 +75,17 @@ export async function uploadFile(
     method: "POST",
     body: formData,
   });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Upload failed");
+
+  // Safely parse — server might return plain text on crash
+  const text = await res.text();
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Upload server error (${res.status}): ${text.slice(0, 200)}`);
   }
-  const { url } = await res.json();
-  return url;
+
+  if (!res.ok) throw new Error(data.error || "Upload failed");
+  if (!data.url) throw new Error("No URL returned from upload");
+  return data.url;
 }
