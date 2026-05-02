@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Save, Eye, Link2, Sparkles } from "lucide-react";
+import { Save, Eye, Link2, Sparkles, Quote, Tv2 } from "lucide-react";
 import { Greeting, GreetingTheme, ColorCustomization } from "@/types";
 import { createGreeting, updateGreeting, uploadFile } from "@/lib/greetings";
 import ThemeSelector from "@/components/ui/ThemeSelector";
@@ -21,28 +21,36 @@ type FormData = {
   title: string; recipient_name: string; message: string;
   theme: GreetingTheme; sender_name: string; image_urls: string[];
   background_music_url: string; video_url: string;
-  uploaded_video_url: string; show_confetti: boolean;
-  is_published: boolean; color_customization: ColorCustomization;
+  uploaded_video_url: string; use_background_video: boolean;
+  show_confetti: boolean; is_published: boolean;
+  color_customization: ColorCustomization;
+  pull_quote: string; cta_yes_label: string; cta_no_label: string;
 };
 
 const defaultForm: FormData = {
   title: "", recipient_name: "", message: "", theme: "birthday-fun",
   sender_name: "", image_urls: [], background_music_url: "", video_url: "",
-  uploaded_video_url: "", show_confetti: true, is_published: false,
-  color_customization: DEFAULT_COLORS,
+  uploaded_video_url: "", use_background_video: false, show_confetti: true,
+  is_published: false, color_customization: DEFAULT_COLORS,
+  pull_quote: "", cta_yes_label: "Send Love", cta_no_label: "Share This Card",
 };
 
 export default function GreetingEditor({ existing }: { existing?: Greeting }) {
   const router = useRouter();
+  const ex = existing as any;
   const [form, setForm] = useState<FormData>(existing ? {
     title: existing.title, recipient_name: existing.recipient_name,
     message: existing.message, theme: existing.theme,
     sender_name: existing.sender_name, image_urls: existing.image_urls,
     background_music_url: existing.background_music_url || "",
     video_url: existing.video_url || "",
-    uploaded_video_url: (existing as any).uploaded_video_url || "",
+    uploaded_video_url: ex?.uploaded_video_url || "",
+    use_background_video: ex?.use_background_video || false,
     show_confetti: existing.show_confetti, is_published: existing.is_published,
-    color_customization: (existing as any).color_customization || DEFAULT_COLORS,
+    color_customization: ex?.color_customization || DEFAULT_COLORS,
+    pull_quote: ex?.pull_quote || "",
+    cta_yes_label: ex?.cta_yes_label || "Send Love",
+    cta_no_label: ex?.cta_no_label || "Share This Card",
   } : defaultForm);
 
   const [saving, setSaving] = useState(false);
@@ -76,20 +84,16 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
   const handleMusicUpload = async (files: File[]) => {
     if (!files[0]) return;
     setUploadingMusic(true);
-    try {
-      const url = await uploadFile("greeting-audio", files[0], "music/");
-      set("background_music_url", url);
-    } catch (e: any) { alert("Audio upload failed: " + e.message); }
+    try { set("background_music_url", await uploadFile("greeting-audio", files[0], "music/")); }
+    catch (e: any) { alert("Audio upload failed: " + e.message); }
     finally { setUploadingMusic(false); }
   };
 
   const handleVideoUpload = async (files: File[]) => {
     if (!files[0]) return;
     setUploadingVideo(true);
-    try {
-      const url = await uploadFile("greeting-videos", files[0], "videos/");
-      set("uploaded_video_url", url);
-    } catch (e: any) { alert("Video upload failed: " + e.message); }
+    try { set("uploaded_video_url", await uploadFile("greeting-videos", files[0], "videos/")); }
+    catch (e: any) { alert("Video upload failed: " + e.message); }
     finally { setUploadingVideo(false); }
   };
 
@@ -124,7 +128,7 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
 
   return (
     <div className="space-y-6">
-      {/* Preview banner */}
+      {/* Banner */}
       <motion.div
         key={form.theme + colors.bgFrom + String(colors.useCustomColors)}
         initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
@@ -161,6 +165,7 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left */}
         <div className="space-y-4">
+          {/* Card details */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
             <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
               <Sparkles size={16} className="text-violet-500" /> Card Details
@@ -175,35 +180,71 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
               rows={5} value={form.message} onChange={e => set("message", e.target.value)} error={errors.message} />
           </div>
 
-          {/* Media */}
+          {/* Pull quote + CTA */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-            <h3 className="font-semibold text-gray-900 text-sm">Video</h3>
-            
-            {/* Upload video */}
+            <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+              <Quote size={16} className="text-pink-500" /> Quote & Buttons
+            </h3>
+            <Textarea
+              label='Pull Quote (shown as styled callout below message)'
+              placeholder='"Even the smallest moments with you become treasures..."'
+              rows={2}
+              value={form.pull_quote}
+              onChange={e => set("pull_quote", e.target.value)}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input label="❤️ Button 1 Label" placeholder="Send Love"
+                value={form.cta_yes_label} onChange={e => set("cta_yes_label", e.target.value)} />
+              <Input label="🔗 Button 2 Label" placeholder="Share This Card"
+                value={form.cta_no_label} onChange={e => set("cta_no_label", e.target.value)} />
+            </div>
+            <p className="text-xs text-gray-400">Tip: Try "Yes, Forever!" and "Maybe Later" for romantic cards 💕</p>
+          </div>
+
+          {/* Video */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+            <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+              <Tv2 size={16} className="text-blue-500" /> Video
+            </h3>
             <FileUpload
-              label="Upload Video File"
-              accept="video/mp4,video/webm,video/quicktime,video/mov"
+              label="Upload Video (MP4 / WebM / MOV)"
+              accept="video/mp4,video/webm,video/quicktime"
               fileType="video"
               onFilesSelected={handleVideoUpload}
               uploading={uploadingVideo}
             />
             {form.uploaded_video_url && (
-              <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl">
-                <span className="text-xs text-blue-700 font-medium truncate flex-1">🎬 Video uploaded</span>
-                <a href={form.uploaded_video_url} target="_blank" className="text-xs text-blue-600 hover:underline">Preview</a>
-                <button onClick={() => set("uploaded_video_url", "")} className="text-xs text-red-500 hover:text-red-700">Remove</button>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl">
+                  <span className="text-xs text-blue-700 font-medium truncate flex-1">🎬 Video uploaded</span>
+                  <a href={form.uploaded_video_url} target="_blank" className="text-xs text-blue-600 hover:underline">Preview</a>
+                  <button onClick={() => { set("uploaded_video_url", ""); set("use_background_video", false); }}
+                    className="text-xs text-red-500 hover:text-red-700">Remove</button>
+                </div>
+                {/* Background video toggle */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-800">Use as background video</p>
+                    <p className="text-xs text-gray-400">Plays silently behind the card (no player UI)</p>
+                  </div>
+                  <button type="button" onClick={() => set("use_background_video", !form.use_background_video)}
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${form.use_background_video ? "bg-violet-600" : "bg-gray-200"}`}>
+                    <motion.div
+                      animate={{ x: form.use_background_video ? 22 : 2 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className="absolute top-1 w-4 h-4 bg-white rounded-full shadow"
+                    />
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* OR divider */}
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-gray-100" />
-              <span className="text-xs text-gray-400 font-medium">OR embed a link</span>
+              <span className="text-xs text-gray-400 font-medium">OR</span>
               <div className="flex-1 h-px bg-gray-100" />
             </div>
-
-            <Input label="YouTube / Vimeo URL"
-              placeholder="https://youtube.com/watch?v=..."
+            <Input label="YouTube / Vimeo URL" placeholder="https://youtube.com/watch?v=..."
               value={form.video_url} onChange={e => set("video_url", e.target.value)} />
 
             <div className="flex items-center gap-3">

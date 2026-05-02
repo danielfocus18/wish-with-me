@@ -52,3 +52,10 @@ export interface ColorCustomization {
   textColor: string;
   useCustomColors: boolean;
 }
+
+export interface GreetingExtras {
+  pull_quote: string;
+  cta_yes_label: string;
+  cta_no_label: string;
+  use_background_video: boolean;
+}
