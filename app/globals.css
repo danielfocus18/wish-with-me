@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Nunito", "Inter", system-ui, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c4b5fd;
+  border-radius: 3px;
+}
+
+/* Range input styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.3);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Tailwind v4 safelist - dynamic theme classes */
+.from-purple-400 { --tw-gradient-from: #c084fc; }
+.from-purple-500 { --tw-gradient-from: #a855f7; }
+.from-rose-600 { --tw-gradient-from: #e11d48; }
+.from-yellow-700 { --tw-gradient-from: #a16207; }
+.from-yellow-600 { --tw-gradient-from: #ca8a04; }
+.from-pink-300 { --tw-gradient-from: #f9a8d4; }
+.from-pink-400 { --tw-gradient-from: #f472b6; }
+.from-blue-800 { --tw-gradient-from: #1e40af; }
+.from-blue-700 { --tw-gradient-from: #1d4ed8; }
+.from-green-800 { --tw-gradient-from: #166534; }
+.from-green-700 { --tw-gradient-from: #15803d; }
+.from-slate-900 { --tw-gradient-from: #0f172a; }
+.from-purple-800 { --tw-gradient-from: #6b21a8; }
+.from-violet-500 { --tw-gradient-from: #8b5cf6; }
+.via-pink-400 { --tw-gradient-via: #f472b6; }
+.via-red-500 { --tw-gradient-via: #ef4444; }
+.via-yellow-500 { --tw-gradient-via: #eab308; }
+.via-rose-200 { --tw-gradient-via: #fecdd3; }
+.via-blue-600 { --tw-gradient-via: #2563eb; }
+.via-green-600 { --tw-gradient-via: #16a34a; }
+.via-purple-900 { --tw-gradient-via: #581c87; }
+.via-purple-500 { --tw-gradient-via: #a855f7; }
+.to-yellow-300 { --tw-gradient-to: #fde047; }
+.to-pink-400 { --tw-gradient-to: #f472b6; }
+.to-amber-300 { --tw-gradient-to: #fcd34d; }
+.to-amber-400 { --tw-gradient-to: #fbbf24; }
+.to-fuchsia-300 { --tw-gradient-to: #f0abfc; }
+.to-rose-400 { --tw-gradient-to: #fb7185; }
+.to-sky-400 { --tw-gradient-to: #38bdf8; }
+.to-sky-500 { --tw-gradient-to: #0ea5e9; }
+.to-red-500 { --tw-gradient-to: #ef4444; }
+.to-red-600 { --tw-gradient-to: #dc2626; }
+.to-slate-800 { --tw-gradient-to: #1e293b; }
+.to-slate-900 { --tw-gradient-to: #0f172a; }
+.to-indigo-500 { --tw-gradient-to: #6366f1; }
+.to-pink-500 { --tw-gradient-to: #ec4899; }
+.to-red-500 { --tw-gradient-to: #ef4444; }
