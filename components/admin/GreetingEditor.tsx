@@ -25,6 +25,9 @@ type FormData = {
   show_confetti: boolean; is_published: boolean;
   color_customization: ColorCustomization;
   pull_quote: string; cta_yes_label: string; cta_no_label: string;
+  interactive_mode: boolean;
+  no_button_behavior: "cycle" | "runaway" | "shrink" | "countdown";
+  no_button_labels: string;
 };
 
 const defaultForm: FormData = {
@@ -33,6 +36,8 @@ const defaultForm: FormData = {
   uploaded_video_url: "", use_background_video: false, show_confetti: true,
   is_published: false, color_customization: DEFAULT_COLORS,
   pull_quote: "", cta_yes_label: "Send Love", cta_no_label: "Share This Card",
+  interactive_mode: false, no_button_behavior: "cycle",
+  no_button_labels: "Maybe Later,Are you sure? 🥺,Really though...,Last chance! 💔,Ok fine... 😢",
 };
 
 export default function GreetingEditor({ existing }: { existing?: Greeting }) {
@@ -51,6 +56,9 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
     pull_quote: ex?.pull_quote || "",
     cta_yes_label: ex?.cta_yes_label || "Send Love",
     cta_no_label: ex?.cta_no_label || "Share This Card",
+    interactive_mode: ex?.interactive_mode || false,
+    no_button_behavior: ex?.no_button_behavior || "cycle",
+    no_button_labels: (ex?.no_button_labels || []).join(",") || "Maybe Later,Are you sure? 🥺,Really though...,Last chance! 💔,Ok fine... 😢",
   } : defaultForm);
 
   const [saving, setSaving] = useState(false);
@@ -107,6 +115,12 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
         video_url: form.video_url || null,
         background_video_url: null,
         uploaded_video_url: form.uploaded_video_url || null,
+        interactive_mode: form.interactive_mode,
+        no_button_behavior: form.no_button_behavior,
+        no_button_labels: form.no_button_labels
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean),
       };
       const greeting = existing
         ? await updateGreeting(existing.id, payload)
@@ -199,6 +213,57 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
                 value={form.cta_no_label} onChange={e => set("cta_no_label", e.target.value)} />
             </div>
             <p className="text-xs text-gray-400">Tip: Try "Yes, Forever!" and "Maybe Later" for romantic cards 💕</p>
+
+            {/* Interactive Mode */}
+            <div className="border-t border-gray-100 pt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">✨ Interactive Mode</p>
+                  <p className="text-xs text-gray-400">Show a full-screen hero with Yes/No buttons before the card reveals</p>
+                </div>
+                <button type="button" onClick={() => set("interactive_mode", !form.interactive_mode)}
+                  className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${form.interactive_mode ? "bg-violet-600" : "bg-gray-200"}`}>
+                  <motion.div animate={{ x: form.interactive_mode ? 22 : 2 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className="absolute top-1 w-4 h-4 bg-white rounded-full shadow" />
+                </button>
+              </div>
+
+              {form.interactive_mode && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+                  className="space-y-3 pt-1">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                      "No" Button Behavior
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["cycle","runaway","shrink","countdown"] as const).map(b => (
+                        <button key={b} type="button"
+                          onClick={() => set("no_button_behavior", b)}
+                          className={`py-2 px-3 rounded-xl text-xs font-medium border transition-all ${
+                            form.no_button_behavior === b
+                              ? "bg-violet-600 text-white border-violet-600"
+                              : "bg-white text-gray-600 border-gray-200 hover:border-violet-300"
+                          }`}>
+                          {b === "cycle" && "🔄 Cycle Labels"}
+                          {b === "runaway" && "🏃 Run Away"}
+                          {b === "shrink" && "📉 Shrink"}
+                          {b === "countdown" && "⏳ Countdown"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <Textarea
+                    label="Cycle Labels (comma-separated, in order)"
+                    placeholder="Maybe Later,Are you sure? 🥺,Really though...,Last chance! 💔"
+                    rows={2}
+                    value={form.no_button_labels}
+                    onChange={e => set("no_button_labels", e.target.value)}
+                  />
+                  <p className="text-xs text-gray-400">The last label stays shown when all cycles are done.</p>
+                </motion.div>
+              )}
+            </div>
           </div>
 
           {/* Video */}
