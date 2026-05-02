@@ -1,8 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-// All Supabase calls go through this server-side proxy
-// → bypasses browser CORS/origin restrictions entirely
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,8 +9,6 @@ function getSupabase() {
   );
 }
 
-// GET /api/greetings?slug=xxx  →  fetch single published greeting
-// GET /api/greetings            →  fetch all greetings (admin)
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const slug = searchParams.get("slug");
@@ -37,7 +33,6 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(data);
 }
 
-// POST /api/greetings  →  create new greeting
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const supabase = getSupabase();
@@ -50,7 +45,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(data);
 }
 
-// PATCH /api/greetings?id=xxx  →  update greeting
 export async function PATCH(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
@@ -67,7 +61,6 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json(data);
 }
 
-// DELETE /api/greetings?id=xxx  →  delete greeting
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");

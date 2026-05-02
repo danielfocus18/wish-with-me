@@ -3,13 +3,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Save, Eye, Link2, Sparkles } from "lucide-react";
-import { Greeting, GreetingTheme } from "@/types";
+import { Greeting, GreetingTheme, ColorCustomization } from "@/types";
 import { createGreeting, updateGreeting, uploadFile } from "@/lib/greetings";
 import ThemeSelector from "@/components/ui/ThemeSelector";
 import FileUpload from "@/components/ui/FileUpload";
+import ColorCustomizer from "@/components/ui/ColorCustomizer";
 import Button from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { THEMES } from "@/lib/themes";
+
+const DEFAULT_COLORS: ColorCustomization = {
+  bgFrom: "#7c3aed",
+  bgTo: "#4f46e5",
+  bgVia: "#6d28d9",
+  cardBg: "#ffffff15",
+  textColor: "#ffffff",
+  useCustomColors: false,
+};
 
 type FormData = {
   title: string;
@@ -23,6 +33,7 @@ type FormData = {
   background_video_url: string;
   show_confetti: boolean;
   is_published: boolean;
+  color_customization: ColorCustomization;
 };
 
 interface GreetingEditorProps {
@@ -41,6 +52,7 @@ const defaultForm: FormData = {
   background_video_url: "",
   show_confetti: true,
   is_published: false,
+  color_customization: DEFAULT_COLORS,
 };
 
 export default function GreetingEditor({ existing }: GreetingEditorProps) {
@@ -59,6 +71,7 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
           background_video_url: existing.background_video_url || "",
           show_confetti: existing.show_confetti,
           is_published: existing.is_published,
+          color_customization: (existing as any).color_customization || DEFAULT_COLORS,
         }
       : defaultForm
   );
@@ -67,7 +80,7 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadingMusic, setUploadingMusic] = useState(false);
   const [savedSlug, setSavedSlug] = useState(existing?.slug || "");
-  const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
   const set = (key: keyof FormData, val: any) =>
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -78,7 +91,7 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
     if (!form.recipient_name.trim()) e.recipient_name = "Recipient name is required";
     if (!form.message.trim()) e.message = "Message is required";
     if (!form.sender_name.trim()) e.sender_name = "Sender name is required";
-    setErrors(e as any);
+    setErrors(e);
     return Object.keys(e).length === 0;
   };
 
@@ -120,7 +133,6 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
         video_url: form.video_url || null,
         background_video_url: form.background_video_url || null,
       };
-
       let greeting: Greeting;
       if (existing) {
         greeting = await updateGreeting(existing.id, payload);
@@ -128,10 +140,7 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
         greeting = await createGreeting(payload);
       }
       setSavedSlug(greeting.slug);
-
-      if (publish) {
-        router.push("/admin/dashboard");
-      }
+      if (publish) router.push("/admin/dashboard");
     } catch (e: any) {
       alert("Error saving: " + e.message);
     } finally {
@@ -140,28 +149,36 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
   };
 
   const theme = THEMES[form.theme];
+  const colors = form.color_customization;
+
+  // Live preview style
+  const previewStyle = colors.useCustomColors
+    ? { background: `linear-gradient(135deg, ${colors.bgFrom}, ${colors.bgVia}, ${colors.bgTo})` }
+    : {};
+
   const cardUrl = savedSlug
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/greetings/${savedSlug}`
     : null;
 
   return (
     <div className="space-y-6">
-      {/* Theme Preview Banner */}
+      {/* Theme / Color Preview Banner */}
       <motion.div
-        key={form.theme}
+        key={form.theme + colors.bgFrom + colors.useCustomColors}
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        className={`rounded-2xl p-4 ${theme.bg} flex items-center gap-3`}
+        className={`rounded-2xl p-4 flex items-center gap-3 ${!colors.useCustomColors ? theme.bg : ""}`}
+        style={colors.useCustomColors ? previewStyle : {}}
       >
         <span className="text-3xl">{theme.emoji}</span>
         <div>
           <p className="text-white font-bold text-sm drop-shadow-md">
-            {theme.label} Theme Active
+            {colors.useCustomColors ? "Custom Colors Active 🎨" : `${theme.label} Theme`}
           </p>
           <p className="text-white/80 text-xs">
             {form.recipient_name
-              ? `Preview: "Happy ${theme.label} to ${form.recipient_name}!"`
-              : "Fill in the form below to build your card"}
+              ? `For ${form.recipient_name} · from ${form.sender_name || "you"}`
+              : "Fill in the form below"}
           </p>
         </div>
       </motion.div>
@@ -176,11 +193,7 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
           <Link2 size={18} className="text-green-600 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-green-600 font-medium mb-0.5">Your card link:</p>
-            <a
-              href={cardUrl}
-              target="_blank"
-              className="text-sm text-green-800 font-mono break-all hover:underline"
-            >
+            <a href={cardUrl} target="_blank" className="text-sm text-green-800 font-mono break-all hover:underline">
               {cardUrl}
             </a>
           </div>
@@ -206,21 +219,21 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
               placeholder="e.g. Happy Birthday Mom! 🎂"
               value={form.title}
               onChange={(e) => set("title", e.target.value)}
-              error={errors.title as string}
+              error={errors.title}
             />
             <Input
               label="Recipient's Name *"
               placeholder="e.g. Mom, Sarah, John"
               value={form.recipient_name}
               onChange={(e) => set("recipient_name", e.target.value)}
-              error={errors.recipient_name as string}
+              error={errors.recipient_name}
             />
             <Input
               label="Your Name (Sender) *"
               placeholder="e.g. Your loving son Daniel"
               value={form.sender_name}
               onChange={(e) => set("sender_name", e.target.value)}
-              error={errors.sender_name as string}
+              error={errors.sender_name}
             />
             <Textarea
               label="Personal Message *"
@@ -228,7 +241,7 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
               rows={5}
               value={form.message}
               onChange={(e) => set("message", e.target.value)}
-              error={errors.message as string}
+              error={errors.message}
             />
           </div>
 
@@ -261,6 +274,12 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
             <ThemeSelector value={form.theme} onChange={(t) => set("theme", t)} />
           </div>
 
+          {/* Color Customizer */}
+          <ColorCustomizer
+            value={form.color_customization}
+            onChange={(c) => set("color_customization", c)}
+          />
+
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
             <h3 className="font-semibold text-gray-900 text-sm">Uploads</h3>
             <FileUpload
@@ -284,15 +303,8 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
             />
             {form.background_music_url && (
               <div className="flex items-center gap-2 p-3 bg-violet-50 rounded-xl">
-                <span className="text-xs text-violet-700 font-medium truncate flex-1">
-                  🎵 Music uploaded
-                </span>
-                <button
-                  onClick={() => set("background_music_url", "")}
-                  className="text-xs text-red-500 hover:text-red-700"
-                >
-                  Remove
-                </button>
+                <span className="text-xs text-violet-700 font-medium truncate flex-1">🎵 Music uploaded</span>
+                <button onClick={() => set("background_music_url", "")} className="text-xs text-red-500 hover:text-red-700">Remove</button>
               </div>
             )}
           </div>
@@ -301,12 +313,7 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
 
       {/* Action Bar */}
       <div className="sticky bottom-4 flex flex-col sm:flex-row gap-3 justify-end bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-gray-100 shadow-lg">
-        <Button
-          variant="secondary"
-          loading={saving}
-          onClick={() => handleSave(false)}
-          icon={<Save size={16} />}
-        >
+        <Button variant="secondary" loading={saving} onClick={() => handleSave(false)} icon={<Save size={16} />}>
           Save Draft
         </Button>
         {savedSlug && (
@@ -319,11 +326,7 @@ export default function GreetingEditor({ existing }: GreetingEditorProps) {
             Preview
           </Button>
         )}
-        <Button
-          loading={saving}
-          onClick={() => handleSave(true)}
-          icon={<Link2 size={16} />}
-        >
+        <Button loading={saving} onClick={() => handleSave(true)} icon={<Link2 size={16} />}>
           Publish & Get Link
         </Button>
       </div>

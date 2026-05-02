@@ -42,3 +42,12 @@ export interface ThemeConfig {
 }
 
 export type ThemeMap = Record<GreetingTheme, ThemeConfig>;
+
+export interface ColorCustomization {
+  bgFrom: string;
+  bgTo: string;
+  bgVia: string;
+  cardBg: string;
+  textColor: string;
+  useCustomColors: boolean;
+}
