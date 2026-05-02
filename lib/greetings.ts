@@ -1,7 +1,9 @@
-import { supabase } from "./supabase";
 import { Greeting } from "@/types";
 import slugify from "slugify";
 import { v4 as uuidv4 } from "uuid";
+
+// All calls go to our own Next.js API routes (server-side)
+// → completely bypasses Supabase browser origin restrictions
 
 export async function createGreeting(
   data: Omit<Greeting, "id" | "slug" | "created_at" | "updated_at">
@@ -9,56 +11,54 @@ export async function createGreeting(
   const baseSlug = slugify(data.title, { lower: true, strict: true });
   const uniqueSlug = `${baseSlug}-${uuidv4().slice(0, 6)}`;
 
-  const { data: greeting, error } = await supabase
-    .from("greetings")
-    .insert([{ ...data, slug: uniqueSlug }])
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return greeting;
+  const res = await fetch("/api/greetings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...data, slug: uniqueSlug }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to create greeting");
+  }
+  return res.json();
 }
 
 export async function updateGreeting(
   id: string,
   data: Partial<Greeting>
 ): Promise<Greeting> {
-  const { data: greeting, error } = await supabase
-    .from("greetings")
-    .update({ ...data, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return greeting;
+  const res = await fetch(`/api/greetings?id=${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to update greeting");
+  }
+  return res.json();
 }
 
 export async function getGreetingBySlug(slug: string): Promise<Greeting | null> {
-  const { data, error } = await supabase
-    .from("greetings")
-    .select("*")
-    .eq("slug", slug)
-    .eq("is_published", true)
-    .single();
-
-  if (error) return null;
-  return data;
+  const res = await fetch(`/api/greetings?slug=${slug}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  return res.json();
 }
 
 export async function getAllGreetings(): Promise<Greeting[]> {
-  const { data, error } = await supabase
-    .from("greetings")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data || [];
+  const res = await fetch("/api/greetings", { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to fetch greetings");
+  return res.json();
 }
 
 export async function deleteGreeting(id: string): Promise<void> {
-  const { error } = await supabase.from("greetings").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  const res = await fetch(`/api/greetings?id=${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to delete greeting");
+  }
 }
 
 export async function uploadFile(
@@ -66,16 +66,19 @@ export async function uploadFile(
   file: File,
   folder = ""
 ): Promise<string> {
-  const ext = file.name.split(".").pop();
-  const filename = `${folder}${uuidv4()}.${ext}`;
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("bucket", bucket);
+  formData.append("folder", folder);
 
-  const { error } = await supabase.storage.from(bucket).upload(filename, file, {
-    cacheControl: "3600",
-    upsert: false,
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
   });
-
-  if (error) throw new Error(error.message);
-
-  const { data } = supabase.storage.from(bucket).getPublicUrl(filename);
-  return data.publicUrl;
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Upload failed");
+  }
+  const { url } = await res.json();
+  return url;
 }
