@@ -59,3 +59,43 @@ export interface GreetingExtras {
   cta_no_label: string;
   use_background_video: boolean;
 }
+
+export interface TimelineEvent {
+  date: string;
+  title: string;
+  description: string;
+}
+
+export interface GreetingFeatures {
+  // Universal
+  reasons_title: string;
+  reasons_list: string[];
+  timeline_events: TimelineEvent[];
+  countdown_date: string;
+  countdown_label: string;
+  poem_title: string;
+  poem_lines: string[];
+  enable_wishes_wall: boolean;
+  enable_reactions: boolean;
+  // Birthday
+  birthday_age: number | null;
+  // Graduation
+  achievement_badges: string[];
+  graduation_year: string;
+  graduation_institution: string;
+  future_goal: string;
+  // Christmas / New Year
+  show_snow: boolean;
+  year_review_items: string[];
+  new_year_wishes: string[];
+}
+
+export interface MemoryEntry {
+  date: string;
+  title: string;
+  description: string;
+}
+
+export interface ReasonEntry {
+  text: string;
+}

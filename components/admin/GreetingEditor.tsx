@@ -11,6 +11,7 @@ import ColorCustomizer from "@/components/ui/ColorCustomizer";
 import Button from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { THEMES, THEME_INTERACTIVE_DEFAULTS } from "@/lib/themes";
+import ContentSections from "@/components/admin/ContentSections";
 
 const DEFAULT_COLORS: ColorCustomization = {
   bgFrom: "#7c3aed", bgTo: "#4f46e5", bgVia: "#6d28d9",
@@ -28,6 +29,16 @@ type FormData = {
   interactive_mode: boolean;
   no_button_behavior: "cycle" | "runaway" | "shrink" | "countdown";
   no_button_labels: string;
+  // Content sections
+  reasons_list: string[]; reasons_title: string;
+  memory_timeline: any[]; memories_title: string;
+  countdown_date: string; countdown_label: string;
+  poem_lines: string[]; poem_title: string;
+  enable_wishes_wall: boolean; wishes_title: string;
+  enable_reactions: boolean;
+  age_milestone: number | null;
+  achievement_badges: string[]; graduation_year: string;
+  year_in_review: string[];
 };
 
 const defaultForm: FormData = {
@@ -38,6 +49,10 @@ const defaultForm: FormData = {
   pull_quote: "", cta_yes_label: "Send Love", cta_no_label: "Share This Card",
   interactive_mode: false, no_button_behavior: "cycle",
   no_button_labels: "Maybe Later,Are you sure? 🥺,Really though...,Last chance! 💔,Ok fine... 😢",
+  reasons_list: [], reasons_title: "", memory_timeline: [], memories_title: "",
+  countdown_date: "", countdown_label: "", poem_lines: [], poem_title: "",
+  enable_wishes_wall: false, wishes_title: "", enable_reactions: true,
+  age_milestone: null, achievement_badges: [], graduation_year: "", year_in_review: [],
 };
 
 export default function GreetingEditor({ existing }: { existing?: Greeting }) {
@@ -59,6 +74,15 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
     interactive_mode: ex?.interactive_mode || false,
     no_button_behavior: ex?.no_button_behavior || "cycle",
     no_button_labels: (ex?.no_button_labels || []).join(",") || "Maybe Later,Are you sure? 🥺,Really though...,Last chance! 💔,Ok fine... 😢",
+    reasons_list: ex?.reasons_list || [], reasons_title: ex?.reasons_title || "",
+    memory_timeline: ex?.memory_timeline || [], memories_title: ex?.memories_title || "",
+    countdown_date: ex?.countdown_date || "", countdown_label: ex?.countdown_label || "",
+    poem_lines: ex?.poem_lines || [], poem_title: ex?.poem_title || "",
+    enable_wishes_wall: ex?.enable_wishes_wall || false, wishes_title: ex?.wishes_title || "",
+    enable_reactions: ex?.enable_reactions !== false,
+    age_milestone: ex?.age_milestone || null,
+    achievement_badges: ex?.achievement_badges || [], graduation_year: ex?.graduation_year || "",
+    year_in_review: ex?.year_in_review || [],
   } : defaultForm);
 
   const [saving, setSaving] = useState(false);
@@ -118,9 +142,22 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
         interactive_mode: form.interactive_mode,
         no_button_behavior: form.no_button_behavior,
         no_button_labels: form.no_button_labels
-          .split(",")
-          .map((s: string) => s.trim())
-          .filter(Boolean),
+          .split(",").map((s: string) => s.trim()).filter(Boolean),
+        reasons_list: form.reasons_list,
+        reasons_title: form.reasons_title || null,
+        memory_timeline: form.memory_timeline,
+        memories_title: form.memories_title || null,
+        countdown_date: form.countdown_date || null,
+        countdown_label: form.countdown_label || null,
+        poem_lines: form.poem_lines,
+        poem_title: form.poem_title || null,
+        enable_wishes_wall: form.enable_wishes_wall,
+        wishes_title: form.wishes_title || null,
+        enable_reactions: form.enable_reactions,
+        age_milestone: form.age_milestone || null,
+        achievement_badges: form.achievement_badges,
+        graduation_year: form.graduation_year || null,
+        year_in_review: form.year_in_review,
       };
       const greeting = existing
         ? await updateGreeting(existing.id, payload)
@@ -366,6 +403,9 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
           </div>
         </div>
       </div>
+
+      {/* Content Sections */}
+      <ContentSections theme={form.theme} form={form} set={(key, val) => set(key as keyof FormData, val)} />
 
       {/* Action bar */}
       <div className="sticky bottom-4 flex flex-col sm:flex-row gap-3 justify-end bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-gray-100 shadow-lg">
