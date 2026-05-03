@@ -114,3 +114,70 @@ export const THEMES: ThemeMap = {
     particle: "#a78bfa",
   },
 };
+
+// Per-theme interactive mode defaults
+// Admin can override any of these in the editor
+export const THEME_INTERACTIVE_DEFAULTS: Record<string, {
+  interactive_mode: boolean;
+  no_button_behavior: "cycle" | "runaway" | "shrink" | "countdown";
+  no_button_labels: string[];
+  cta_yes_label: string;
+  cta_no_label: string;
+}> = {
+  "romantic-red": {
+    interactive_mode: true,
+    no_button_behavior: "runaway",
+    no_button_labels: ["Maybe Later", "Are you sure? 🥺", "Really...?", "Think harder 💭", "Last chance 💔", "Fine... 😢"],
+    cta_yes_label: "Yes, Forever! ❤️",
+    cta_no_label: "Maybe Later",
+  },
+  "birthday-fun": {
+    interactive_mode: true,
+    no_button_behavior: "shrink",
+    no_button_labels: ["Skip Party 🎈", "Still skip?", "Missing out!", "Sure sure?", "Ok... 🎂"],
+    cta_yes_label: "Let's Celebrate! 🎉",
+    cta_no_label: "Skip Party 🎈",
+  },
+  "mothers-day": {
+    interactive_mode: true,
+    no_button_behavior: "cycle",
+    no_button_labels: ["Not yet...", "Keep reading 🌷", "Almost there...", "One more... 💕", "Ok I'll read 😊"],
+    cta_yes_label: "I Feel So Loved! 🌷",
+    cta_no_label: "Not yet...",
+  },
+  "fathers-day": {
+    interactive_mode: true,
+    no_button_behavior: "cycle",
+    no_button_labels: ["Hmm... 🤔", "Think harder", "Still thinking?", "You totally are! 😄", "Ok fine! 👔"],
+    cta_yes_label: "Obviously! 😄",
+    cta_no_label: "Hmm... 🤔",
+  },
+  "graduation-gold": {
+    interactive_mode: true,
+    no_button_behavior: "countdown",
+    no_button_labels: ["Tell me more", "And more...", "Keep going...", "Almost there", "Ok I'm ready! 🎓"],
+    cta_yes_label: "I Know! 🎓",
+    cta_no_label: "Tell me more",
+  },
+  "christmas-joy": {
+    interactive_mode: true,
+    no_button_behavior: "countdown",
+    no_button_labels: ["Check again 🎄", "Still checking...", "Almost...", "One more...", "Ho Ho Yes! 🎅"],
+    cta_yes_label: "Ho Ho Yes! 🎄",
+    cta_no_label: "Check again 🎄",
+  },
+  "new-year-glow": {
+    interactive_mode: false,
+    no_button_behavior: "cycle",
+    no_button_labels: ["Ask me later", "Almost ready...", "One more sec", "Ok, let's go! 🎆"],
+    cta_yes_label: "Born Ready! 🎆",
+    cta_no_label: "Ask me later",
+  },
+  "general-love": {
+    interactive_mode: false,
+    no_button_behavior: "cycle",
+    no_button_labels: ["Not yet...", "Hmm...", "Ok fine! 🌟"],
+    cta_yes_label: "Open It! 🎁",
+    cta_no_label: "Not yet...",
+  },
+};

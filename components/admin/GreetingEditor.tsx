@@ -10,7 +10,7 @@ import FileUpload from "@/components/ui/FileUpload";
 import ColorCustomizer from "@/components/ui/ColorCustomizer";
 import Button from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
-import { THEMES } from "@/lib/themes";
+import { THEMES, THEME_INTERACTIVE_DEFAULTS } from "@/lib/themes";
 
 const DEFAULT_COLORS: ColorCustomization = {
   bgFrom: "#7c3aed", bgTo: "#4f46e5", bgVia: "#6d28d9",
@@ -323,7 +323,24 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
         {/* Right */}
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <ThemeSelector value={form.theme} onChange={t => set("theme", t)} />
+            <ThemeSelector value={form.theme} onChange={t => {
+              set("theme", t);
+              // Auto-apply per-theme interactive defaults (only if not yet customised)
+              const defaults = THEME_INTERACTIVE_DEFAULTS[t];
+              if (defaults && !form.interactive_mode) {
+                setForm(prev => ({
+                  ...prev,
+                  theme: t,
+                  interactive_mode: defaults.interactive_mode,
+                  no_button_behavior: defaults.no_button_behavior,
+                  no_button_labels: defaults.no_button_labels.join(","),
+                  cta_yes_label: prev.cta_yes_label === "Send Love" ? defaults.cta_yes_label : prev.cta_yes_label,
+                  cta_no_label: prev.cta_no_label === "Share This Card" ? defaults.cta_no_label : prev.cta_no_label,
+                }));
+              } else {
+                set("theme", t);
+              }
+            }} />
           </div>
           <ColorCustomizer value={form.color_customization} onChange={c => set("color_customization", c)} />
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
