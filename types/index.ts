@@ -40,6 +40,9 @@ export interface ThemeConfig {
   gradientTo: string;
   cardBg: string;
   particle: string;
+  bgHex: string[];
+  ornament: string;
+  borderStyle: string;
 }
 
 export type ThemeMap = Record<GreetingTheme, ThemeConfig>;
