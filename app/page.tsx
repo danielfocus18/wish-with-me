@@ -367,14 +367,15 @@ export default function HomePage() {
               Like what you see? DM to order your card — ready within 24 hours.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <a href="https://wa.me/?text=Hi%2C%20I%20want%20to%20order%20a%20Wish%20With%20Me%20card%20%F0%9F%8E%81"
+              <a href="https://wa.me/+233269219920?text=Hi%2C%20I%20want%20to%20order%20a%20Wish%20With%20Me%20card%20%F0%9F%8E%81"
                 target="_blank"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-2xl text-sm transition-all hover:scale-105 shadow-lg shadow-green-500/30">
                 💬 Order on WhatsApp
               </a>
-              <a href="/admin"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/8 hover:bg-white/15 border border-white/15 text-white font-semibold rounded-2xl text-sm transition-all">
-                <ExternalLink size={14} /> Admin Login
+              <a href="https://instagram.com/kwekuwiththemenace"
+                target="_blank"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-700 hover:to-violet-700 text-white font-bold rounded-2xl text-sm transition-all hover:scale-105 shadow-lg shadow-pink-500/30">
+                📸 Follow on Instagram
               </a>
             </div>
           </motion.div>
@@ -443,20 +444,40 @@ export default function HomePage() {
           <h2 className="text-2xl md:text-3xl font-bold mb-3">Ready to make someone's day?</h2>
           <p className="text-white/50 text-sm mb-3">GH₵ 100 per card · Ready in 24 hours · Shared as a link</p>
           <p className="text-white/30 text-xs mb-8">Birthdays · Valentine's · Graduations · Mother's Day · Christmas · New Year · Any Occasion</p>
-          <a href="https://wa.me/?text=Hi%2C%20I%20want%20to%20order%20a%20Wish%20With%20Me%20card%20%F0%9F%8E%81"
-            target="_blank"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-white text-gray-900 font-bold rounded-2xl hover:bg-gray-100 transition-all hover:scale-105 shadow-xl text-sm">
-            <Gift size={16} />
-            Order Your Card — GH₵ 100
-          </a>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="https://wa.me/+233269219920?text=Hi%2C%20I%20want%20to%20order%20a%20Wish%20With%20Me%20card%20%F0%9F%8E%81"
+              target="_blank"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-white text-gray-900 font-bold rounded-2xl hover:bg-gray-100 transition-all hover:scale-105 shadow-xl text-sm">
+              <Gift size={16} />
+              Order on WhatsApp — GH₵ 100
+            </a>
+            <a href="https://instagram.com/kwekuwiththemenace"
+              target="_blank"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-pink-600 to-violet-600 text-white font-bold rounded-2xl hover:scale-105 transition-all shadow-xl shadow-pink-500/20 text-sm">
+              📸 @kwekuwiththemenace
+            </a>
+          </div>
         </motion.div>
       </section>
 
       {/* Footer */}
       <footer className="py-8 px-6 border-t border-white/5 text-center">
-        <p className="text-xs text-white/25">
-          Wish With Me · Digital Greeting Cards · Ghana · {new Date().getFullYear()}
-        </p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center gap-4">
+            <a href="https://wa.me/+233269219920" target="_blank"
+              className="text-xs text-white/30 hover:text-green-400 transition-colors flex items-center gap-1.5">
+              💬 +233 26 921 9920
+            </a>
+            <span className="text-white/10">·</span>
+            <a href="https://instagram.com/kwekuwiththemenace" target="_blank"
+              className="text-xs text-white/30 hover:text-pink-400 transition-colors flex items-center gap-1.5">
+              📸 @kwekuwiththemenace
+            </a>
+          </div>
+          <p className="text-xs text-white/15">
+            Wish With Me · Digital Greeting Cards · Ghana · {new Date().getFullYear()}
+          </p>
+        </div>
       </footer>
     </main>
   );
