@@ -18,9 +18,9 @@ export interface Greeting {
   sender_name: string;
   image_urls: string[];
   background_music_url: string | null;
-  video_url: string | null;
   background_video_url: string | null;
-  uploaded_video_url: string | null;
+  uploaded_video_url: string | null;  // background video
+  card_video_url: string | null;  // inline card video
   show_confetti: boolean;
   is_published: boolean;
   created_at: string;

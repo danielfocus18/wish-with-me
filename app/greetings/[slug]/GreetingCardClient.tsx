@@ -6,7 +6,6 @@ import { Heart, Share2, Check, RefreshCw } from "lucide-react";
 import { Greeting, ThemeConfig, ColorCustomization } from "@/types";
 import Slideshow from "@/components/greeting/Slideshow";
 import AudioPlayer from "@/components/greeting/AudioPlayer";
-import VideoEmbed from "@/components/greeting/VideoEmbed";
 import VideoPlayer from "@/components/greeting/VideoPlayer";
 import LoadingScreen from "@/components/greeting/LoadingScreen";
 import MusicPrompt from "@/components/greeting/MusicPrompt";
@@ -279,17 +278,12 @@ export default function GreetingCardClient({ greeting, theme }: Props) {
             </motion.div>
           )}
 
-          {/* Inline video */}
-          {!hasBgVideo && ex.uploaded_video_url && (
-            <motion.div variants={itemVariants} className="w-full mb-6">
-              <VideoPlayer src={ex.uploaded_video_url} />
-            </motion.div>
-          )}
 
-          {/* YouTube embed */}
-          {greeting.video_url && (
+
+          {/* Card video (uploaded) */}
+          {!hasBgVideo && ex.card_video_url && (
             <motion.div variants={itemVariants} className="w-full mb-6">
-              <VideoEmbed url={greeting.video_url} />
+              <VideoPlayer src={ex.card_video_url} />
             </motion.div>
           )}
 

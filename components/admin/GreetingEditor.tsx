@@ -21,8 +21,10 @@ const DEFAULT_COLORS: ColorCustomization = {
 type FormData = {
   title: string; recipient_name: string; message: string;
   theme: GreetingTheme; sender_name: string; image_urls: string[];
-  background_music_url: string; video_url: string;
-  uploaded_video_url: string; use_background_video: boolean;
+  background_music_url: string;
+  uploaded_video_url: string;    // background video (behind card)
+  card_video_url: string;        // inline video on card
+  use_background_video: boolean;
   show_confetti: boolean; is_published: boolean;
   color_customization: ColorCustomization;
   pull_quote: string; cta_yes_label: string; cta_no_label: string;
@@ -43,8 +45,9 @@ type FormData = {
 
 const defaultForm: FormData = {
   title: "", recipient_name: "", message: "", theme: "birthday-fun",
-  sender_name: "", image_urls: [], background_music_url: "", video_url: "",
-  uploaded_video_url: "", use_background_video: false, show_confetti: true,
+  sender_name: "", image_urls: [], background_music_url: "",
+  uploaded_video_url: "", card_video_url: "",
+  use_background_video: false, show_confetti: true,
   is_published: false, color_customization: DEFAULT_COLORS,
   pull_quote: "", cta_yes_label: "Send Love", cta_no_label: "Share This Card",
   interactive_mode: false, no_button_behavior: "cycle",
@@ -63,8 +66,8 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
     message: existing.message, theme: existing.theme,
     sender_name: existing.sender_name, image_urls: existing.image_urls,
     background_music_url: existing.background_music_url || "",
-    video_url: existing.video_url || "",
     uploaded_video_url: ex?.uploaded_video_url || "",
+    card_video_url: ex?.card_video_url || "",
     use_background_video: ex?.use_background_video || false,
     show_confetti: existing.show_confetti, is_published: existing.is_published,
     color_customization: ex?.color_customization || DEFAULT_COLORS,
@@ -88,7 +91,8 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
   const [saving, setSaving] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadingMusic, setUploadingMusic] = useState(false);
-  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingBgVideo, setUploadingBgVideo] = useState(false);
+  const [uploadingCardVideo, setUploadingCardVideo] = useState(false);
   const [savedSlug, setSavedSlug] = useState(existing?.slug || "");
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
@@ -121,12 +125,20 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
     finally { setUploadingMusic(false); }
   };
 
-  const handleVideoUpload = async (files: File[]) => {
+  const handleBgVideoUpload = async (files: File[]) => {
     if (!files[0]) return;
-    setUploadingVideo(true);
-    try { set("uploaded_video_url", await uploadFile("greeting-videos", files[0], "videos/")); }
-    catch (e: any) { alert("Video upload failed: " + e.message); }
-    finally { setUploadingVideo(false); }
+    setUploadingBgVideo(true);
+    try { set("uploaded_video_url", await uploadFile("greeting-videos", files[0], "bg/")); }
+    catch (e: any) { alert("Background video upload failed: " + e.message); }
+    finally { setUploadingBgVideo(false); }
+  };
+
+  const handleCardVideoUpload = async (files: File[]) => {
+    if (!files[0]) return;
+    setUploadingCardVideo(true);
+    try { set("card_video_url", await uploadFile("greeting-videos", files[0], "card/")); }
+    catch (e: any) { alert("Card video upload failed: " + e.message); }
+    finally { setUploadingCardVideo(false); }
   };
 
   const handleSave = async (publish: boolean) => {
@@ -136,13 +148,11 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
       const payload = {
         ...form, is_published: publish,
         background_music_url: form.background_music_url || null,
-        video_url: form.video_url || null,
+        video_url: null,
         background_video_url: null,
         uploaded_video_url: form.uploaded_video_url || null,
-        interactive_mode: form.interactive_mode,
-        no_button_behavior: form.no_button_behavior,
-        no_button_labels: form.no_button_labels
-          .split(",").map((s: string) => s.trim()).filter(Boolean),
+        card_video_url: form.card_video_url || null,
+        no_button_labels: form.no_button_labels.split(",").map((s: string) => s.trim()).filter(Boolean),
         reasons_list: form.reasons_list,
         reasons_title: form.reasons_title || null,
         memory_timeline: form.memory_timeline,
@@ -171,11 +181,9 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
   const theme = THEMES[form.theme];
   const colors = form.color_customization;
   const previewStyle = colors.useCustomColors
-    ? { background: `linear-gradient(135deg, ${colors.bgFrom}, ${colors.bgVia}, ${colors.bgTo})` }
-    : {};
+    ? { background: `linear-gradient(135deg, ${colors.bgFrom}, ${colors.bgVia}, ${colors.bgTo})` } : {};
   const cardUrl = savedSlug
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/greetings/${savedSlug}`
-    : null;
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/greetings/${savedSlug}` : null;
 
   return (
     <div className="space-y-6">
@@ -231,18 +239,14 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
               rows={5} value={form.message} onChange={e => set("message", e.target.value)} error={errors.message} />
           </div>
 
-          {/* Pull quote + CTA */}
+          {/* Quote + Buttons + Interactive */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
             <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
               <Quote size={16} className="text-pink-500" /> Quote & Buttons
             </h3>
-            <Textarea
-              label='Pull Quote (shown as styled callout below message)'
+            <Textarea label="Pull Quote (styled callout below message)"
               placeholder='"Even the smallest moments with you become treasures..."'
-              rows={2}
-              value={form.pull_quote}
-              onChange={e => set("pull_quote", e.target.value)}
-            />
+              rows={2} value={form.pull_quote} onChange={e => set("pull_quote", e.target.value)} />
             <div className="grid grid-cols-2 gap-3">
               <Input label="❤️ Button 1 Label" placeholder="Send Love"
                 value={form.cta_yes_label} onChange={e => set("cta_yes_label", e.target.value)} />
@@ -256,7 +260,7 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-gray-800">✨ Interactive Mode</p>
-                  <p className="text-xs text-gray-400">Show a full-screen hero with Yes/No buttons before the card reveals</p>
+                  <p className="text-xs text-gray-400">Full-screen hero with Yes/No buttons before the card reveals</p>
                 </div>
                 <button type="button" onClick={() => set("interactive_mode", !form.interactive_mode)}
                   className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${form.interactive_mode ? "bg-violet-600" : "bg-gray-200"}`}>
@@ -265,18 +269,14 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
                     className="absolute top-1 w-4 h-4 bg-white rounded-full shadow" />
                 </button>
               </div>
-
               {form.interactive_mode && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
                   className="space-y-3 pt-1">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                      "No" Button Behavior
-                    </label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">"No" Button Behavior</label>
                     <div className="grid grid-cols-2 gap-2">
                       {(["cycle","runaway","shrink","countdown"] as const).map(b => (
-                        <button key={b} type="button"
-                          onClick={() => set("no_button_behavior", b)}
+                        <button key={b} type="button" onClick={() => set("no_button_behavior", b)}
                           className={`py-2 px-3 rounded-xl text-xs font-medium border transition-all ${
                             form.no_button_behavior === b
                               ? "bg-violet-600 text-white border-violet-600"
@@ -290,64 +290,76 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
                       ))}
                     </div>
                   </div>
-                  <Textarea
-                    label="Cycle Labels (comma-separated, in order)"
+                  <Textarea label="Cycle Labels (comma-separated)"
                     placeholder="Maybe Later,Are you sure? 🥺,Really though...,Last chance! 💔"
-                    rows={2}
-                    value={form.no_button_labels}
-                    onChange={e => set("no_button_labels", e.target.value)}
-                  />
-                  <p className="text-xs text-gray-400">The last label stays shown when all cycles are done.</p>
+                    rows={2} value={form.no_button_labels}
+                    onChange={e => set("no_button_labels", e.target.value)} />
                 </motion.div>
               )}
             </div>
           </div>
 
-          {/* Video */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+          {/* Video section — two separate uploads */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-5">
             <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
-              <Tv2 size={16} className="text-blue-500" /> Video
+              <Tv2 size={16} className="text-blue-500" /> Videos
             </h3>
-            <FileUpload
-              label="Upload Video (MP4 / WebM / MOV)"
-              accept="video/mp4,video/webm,video/quicktime"
-              fileType="video"
-              onFilesSelected={handleVideoUpload}
-              uploading={uploadingVideo}
-            />
-            {form.uploaded_video_url && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl">
-                  <span className="text-xs text-blue-700 font-medium truncate flex-1">🎬 Video uploaded</span>
-                  <a href={form.uploaded_video_url} target="_blank" className="text-xs text-blue-600 hover:underline">Preview</a>
-                  <button onClick={() => { set("uploaded_video_url", ""); set("use_background_video", false); }}
-                    className="text-xs text-red-500 hover:text-red-700">Remove</button>
-                </div>
-                {/* Background video toggle */}
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                  <div>
-                    <p className="text-xs font-semibold text-gray-800">Use as background video</p>
-                    <p className="text-xs text-gray-400">Plays silently behind the card (no player UI)</p>
-                  </div>
-                  <button type="button" onClick={() => set("use_background_video", !form.use_background_video)}
-                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${form.use_background_video ? "bg-violet-600" : "bg-gray-200"}`}>
-                    <motion.div
-                      animate={{ x: form.use_background_video ? 22 : 2 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="absolute top-1 w-4 h-4 bg-white rounded-full shadow"
-                    />
-                  </button>
-                </div>
-              </div>
-            )}
 
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-gray-100" />
-              <span className="text-xs text-gray-400 font-medium">OR</span>
-              <div className="flex-1 h-px bg-gray-100" />
+            {/* Video 1 — Background */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full bg-purple-500" />
+                <p className="text-sm font-semibold text-gray-800">Background Video</p>
+              </div>
+              <p className="text-xs text-gray-400 mb-2">Plays silently behind the card — great for romantic/moody cards</p>
+              <FileUpload label="" accept="video/mp4,video/webm,video/quicktime"
+                fileType="video" onFilesSelected={handleBgVideoUpload} uploading={uploadingBgVideo} />
+              {form.uploaded_video_url && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-xl">
+                    <span className="text-xs text-purple-700 font-medium truncate flex-1">🎬 Background video uploaded</span>
+                    <a href={form.uploaded_video_url} target="_blank" className="text-xs text-purple-600 hover:underline shrink-0">Preview</a>
+                    <button onClick={() => { set("uploaded_video_url", ""); set("use_background_video", false); }}
+                      className="text-xs text-red-500 hover:text-red-700 shrink-0">Remove</button>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-800">Use as background</p>
+                      <p className="text-xs text-gray-400">Plays silently, full screen behind the card</p>
+                    </div>
+                    <button type="button" onClick={() => set("use_background_video", !form.use_background_video)}
+                      className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${form.use_background_video ? "bg-violet-600" : "bg-gray-200"}`}>
+                      <motion.div animate={{ x: form.use_background_video ? 22 : 2 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-            <Input label="YouTube / Vimeo URL" placeholder="https://youtube.com/watch?v=..."
-              value={form.video_url} onChange={e => set("video_url", e.target.value)} />
+
+            <div className="h-px bg-gray-100" />
+
+            {/* Video 2 — Card Video */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <p className="text-sm font-semibold text-gray-800">Card Video</p>
+              </div>
+              <p className="text-xs text-gray-400 mb-2">Appears as a playable video on the card — great for personal video messages</p>
+              <FileUpload label="" accept="video/mp4,video/webm,video/quicktime"
+                fileType="video" onFilesSelected={handleCardVideoUpload} uploading={uploadingCardVideo} />
+              {form.card_video_url && (
+                <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl">
+                  <span className="text-xs text-blue-700 font-medium truncate flex-1">🎬 Card video uploaded</span>
+                  <a href={form.card_video_url} target="_blank" className="text-xs text-blue-600 hover:underline shrink-0">Preview</a>
+                  <button onClick={() => set("card_video_url", "")}
+                    className="text-xs text-red-500 hover:text-red-700 shrink-0">Remove</button>
+                </div>
+              )}
+            </div>
+
+            <div className="h-px bg-gray-100" />
 
             <div className="flex items-center gap-3">
               <input type="checkbox" id="confetti" checked={form.show_confetti}
@@ -361,25 +373,22 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <ThemeSelector value={form.theme} onChange={t => {
-              set("theme", t);
-              // Auto-apply per-theme interactive defaults (only if not yet customised)
               const defaults = THEME_INTERACTIVE_DEFAULTS[t];
               if (defaults && !form.interactive_mode) {
                 setForm(prev => ({
-                  ...prev,
-                  theme: t,
+                  ...prev, theme: t,
                   interactive_mode: defaults.interactive_mode,
                   no_button_behavior: defaults.no_button_behavior,
                   no_button_labels: defaults.no_button_labels.join(","),
                   cta_yes_label: prev.cta_yes_label === "Send Love" ? defaults.cta_yes_label : prev.cta_yes_label,
                   cta_no_label: prev.cta_no_label === "Share This Card" ? defaults.cta_no_label : prev.cta_no_label,
                 }));
-              } else {
-                set("theme", t);
-              }
+              } else { set("theme", t); }
             }} />
           </div>
+
           <ColorCustomizer value={form.color_customization} onChange={c => set("color_customization", c)} />
+
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
             <h3 className="font-semibold text-gray-900 text-sm">Photos & Audio</h3>
             <FileUpload label="Photo Slideshow Images"
@@ -391,9 +400,7 @@ export default function GreetingEditor({ existing }: { existing?: Greeting }) {
               uploading={uploadingImages} />
             <FileUpload label="Background Music (MP3)"
               accept="audio/mpeg,audio/mp3,audio/wav"
-              fileType="audio"
-              onFilesSelected={handleMusicUpload}
-              uploading={uploadingMusic} />
+              fileType="audio" onFilesSelected={handleMusicUpload} uploading={uploadingMusic} />
             {form.background_music_url && (
               <div className="flex items-center gap-2 p-3 bg-violet-50 rounded-xl">
                 <span className="text-xs text-violet-700 font-medium truncate flex-1">🎵 Music uploaded</span>
