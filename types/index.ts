@@ -97,6 +97,8 @@ export interface MemoryEntry {
   date: string;
   title: string;
   description: string;
+  media_url?: string;       // image or video URL from Supabase storage
+  media_type?: "image" | "video";  // so the card knows how to render it
 }
 
 export interface ReasonEntry {
