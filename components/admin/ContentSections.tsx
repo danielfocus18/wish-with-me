@@ -3,7 +3,6 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Plus, Trash2, GripVertical, Image, Film, X, Loader2 } from "lucide-react";
 import { Input, Textarea } from "@/components/ui/Input";
-import { uploadFile } from "@/lib/greetings";
 import { GreetingTheme } from "@/types";
 
 interface ContentSectionsProps {
@@ -90,7 +89,7 @@ function MemoryEntryEditor({
     const isVideo = file.type.startsWith("video/");
     const mediaType = isVideo ? "video" : "image";
 
-    // Show local preview immediately so user sees something
+    // Show local preview immediately
     const localUrl = URL.createObjectURL(file);
     setLocalPreview(localUrl);
     setLocalType(mediaType);
@@ -98,20 +97,33 @@ function MemoryEntryEditor({
     setUploading(true);
 
     try {
-      // Use greeting-images for photos, greeting-videos for videos
-      // Use root of bucket (no subfolder) to avoid policy path issues
       const bucket = isVideo ? "greeting-videos" : "greeting-images";
-      const url = await uploadFile(bucket, file, "");
-      // Upload succeeded — save to form state
-      onUpdate("media_url", url);
+
+      // Use server-side /api/upload route — avoids browser CORS/policy issues
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("bucket", bucket);
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const text = await res.text();
+
+      let data: any;
+      try { data = JSON.parse(text); } catch {
+        throw new Error(`Server error: ${text.slice(0, 100)}`);
+      }
+
+      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+      if (!data.url) throw new Error("No URL returned from server");
+
+      // Success — persist to form state
+      onUpdate("media_url", data.url);
       onUpdate("media_type", mediaType);
-      setLocalPreview(""); // clear local preview, form state takes over
-      setLocalType("");
-    } catch (err: any) {
-      // Upload failed — clear local preview and show error
       setLocalPreview("");
       setLocalType("");
-      setUploadError(err.message || "Upload failed. Check storage policies.");
+    } catch (err: any) {
+      // Keep local preview visible — user can still see their image while error shows
+      // Do NOT clear localPreview here — that was the bug causing the "goes back" behaviour
+      setUploadError(err.message || "Upload failed. Please try again.");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
