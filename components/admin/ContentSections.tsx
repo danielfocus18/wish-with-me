@@ -79,22 +79,39 @@ function MemoryEntryEditor({
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [localPreview, setLocalPreview] = useState<string>("");
+  const [localType, setLocalType] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
+
+    const isVideo = file.type.startsWith("video/");
+    const mediaType = isVideo ? "video" : "image";
+
+    // Show local preview immediately so user sees something
+    const localUrl = URL.createObjectURL(file);
+    setLocalPreview(localUrl);
+    setLocalType(mediaType);
     setUploadError("");
+    setUploading(true);
+
     try {
-      const isVideo = file.type.startsWith("video/");
+      // Use greeting-images for photos, greeting-videos for videos
+      // Use root of bucket (no subfolder) to avoid policy path issues
       const bucket = isVideo ? "greeting-videos" : "greeting-images";
-      const folder = isVideo ? "memories/v/" : "memories/i/";
-      const url = await uploadFile(bucket, file, folder);
+      const url = await uploadFile(bucket, file, "");
+      // Upload succeeded — save to form state
       onUpdate("media_url", url);
-      onUpdate("media_type", isVideo ? "video" : "image");
+      onUpdate("media_type", mediaType);
+      setLocalPreview(""); // clear local preview, form state takes over
+      setLocalType("");
     } catch (err: any) {
-      setUploadError("Upload failed: " + err.message);
+      // Upload failed — clear local preview and show error
+      setLocalPreview("");
+      setLocalType("");
+      setUploadError(err.message || "Upload failed. Check storage policies.");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -104,52 +121,91 @@ function MemoryEntryEditor({
   const removeMedia = () => {
     onUpdate("media_url", "");
     onUpdate("media_type", "");
+    setLocalPreview("");
+    setLocalType("");
+    setUploadError("");
   };
+
+  // Show either the successfully uploaded URL or the local blob preview
+  const displayUrl = memory.media_url || localPreview;
+  const displayType = memory.media_url ? memory.media_type : localType;
 
   return (
     <div className="bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
-      {/* Media preview / upload area */}
-      {memory.media_url ? (
+      {/* Media area */}
+      {displayUrl ? (
         <div className="relative w-full bg-black" style={{ aspectRatio: "16/9" }}>
-          {memory.media_type === "video" ? (
-            <video src={memory.media_url} className="w-full h-full object-contain" controls />
+          {displayType === "video" ? (
+            <video src={displayUrl} className="w-full h-full object-contain" controls />
           ) : (
-            <img src={memory.media_url} alt="Memory" className="w-full h-full object-cover" />
+            <img src={displayUrl} alt="Memory" className="w-full h-full object-cover" />
           )}
-          <button
-            type="button"
-            onClick={removeMedia}
-            className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-500 rounded-full text-white transition-colors"
-          >
-            <X size={12} />
-          </button>
+
+          {/* Uploading overlay */}
+          {uploading && (
+            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
+              <Loader2 size={24} className="text-white animate-spin" />
+              <p className="text-white text-xs font-medium">Uploading to cloud...</p>
+            </div>
+          )}
+
+          {/* Uploaded badge */}
+          {!uploading && memory.media_url && (
+            <div className="absolute top-2 left-2 text-[10px] bg-green-500/90 text-white px-2 py-0.5 rounded-full font-medium">
+              ✓ Saved
+            </div>
+          )}
+
+          {/* Remove button */}
+          {!uploading && (
+            <button
+              type="button"
+              onClick={removeMedia}
+              className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-500 rounded-full text-white transition-colors"
+            >
+              <X size={12} />
+            </button>
+          )}
+
           <div className="absolute bottom-2 left-2 text-[10px] bg-black/50 text-white px-2 py-0.5 rounded-full capitalize">
-            {memory.media_type}
+            {displayType}
           </div>
         </div>
       ) : (
         <div
           className="w-full flex flex-col items-center justify-center gap-2 py-5 cursor-pointer hover:bg-gray-100 transition-colors border-b border-gray-100"
-          onClick={() => inputRef.current?.click()}
+          onClick={() => !uploading && inputRef.current?.click()}
         >
           {uploading ? (
             <>
               <Loader2 size={20} className="text-violet-500 animate-spin" />
-              <p className="text-xs text-gray-400">Uploading...</p>
+              <p className="text-xs text-gray-500 font-medium">Uploading...</p>
             </>
           ) : (
             <>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-violet-100 rounded-xl"><Image size={16} className="text-violet-600" /></div>
-                <div className="p-2 bg-blue-100 rounded-xl"><Film size={16} className="text-blue-600" /></div>
+                <div className="p-2 bg-violet-100 rounded-xl">
+                  <Image size={16} className="text-violet-600" />
+                </div>
+                <div className="p-2 bg-blue-100 rounded-xl">
+                  <Film size={16} className="text-blue-600" />
+                </div>
               </div>
               <p className="text-xs text-gray-500 font-medium">Add photo or video for this memory</p>
-              <p className="text-[10px] text-gray-400">JPG, PNG, MP4, MOV — tap to browse</p>
+              <p className="text-[10px] text-gray-400">JPG, PNG, WebP, MP4, MOV</p>
             </>
           )}
-          {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+          {uploadError && (
+            <div className="mx-3 px-3 py-2 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-xs text-red-600 text-center">{uploadError}</p>
+              <p className="text-[10px] text-red-400 text-center mt-0.5">
+                Check Supabase storage policies allow public uploads
+              </p>
+            </div>
+          )}
         </div>
       )}
+
       <input
         ref={inputRef}
         type="file"
@@ -161,20 +217,31 @@ function MemoryEntryEditor({
       {/* Text fields */}
       <div className="p-3 space-y-2 relative">
         <button
-          type="button" onClick={onRemove}
+          type="button"
+          onClick={onRemove}
           className="absolute top-2 right-2 p-1 text-gray-300 hover:text-red-500 transition-colors"
+          title="Remove memory"
         >
           <Trash2 size={13} />
         </button>
-        <input placeholder="Date (e.g. June 2021)" value={memory.date || ""}
+        <input
+          placeholder="Date (e.g. June 2021)"
+          value={memory.date || ""}
           onChange={e => onUpdate("date", e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 pr-8" />
-        <input placeholder="Title (e.g. The day we met)" value={memory.title || ""}
+          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 pr-8"
+        />
+        <input
+          placeholder="Title (e.g. The day we met)"
+          value={memory.title || ""}
           onChange={e => onUpdate("title", e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500" />
-        <input placeholder="Description (optional)" value={memory.description || ""}
+          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+        />
+        <input
+          placeholder="Description (optional)"
+          value={memory.description || ""}
           onChange={e => onUpdate("description", e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500" />
+          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+        />
       </div>
     </div>
   );
